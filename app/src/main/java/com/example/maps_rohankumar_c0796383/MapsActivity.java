@@ -134,7 +134,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     totaldis = results[0]+results[1]+results[2]+results[3];
                     setMarker(latLng);
                 } else {
-
+                    clearMap();
                 }
             }
         });
@@ -278,13 +278,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         .add(latList.get(i == 0 ? 3 : i-1),latList.get(i))
                         .clickable(true);
                 lines.add(mMap.addPolyline(options));
-                lines.get(lines.size()-1).setTag(markerList.get(i == 0 ? 3 : i-1).getTitle().toString() + "-" +markerList.get(i).getTitle().toString() );
+                lines.get(lines.size()-1).setTag(markerList.get(i == 0 ? 3 : i-1).getTitle().toString() + "-" +markerList.get(i).getTitle().toString()+" Distance = "+results[i] );
             }
 
 
 
             count++;
         }else {
+
         }
     }
 
@@ -302,6 +303,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         markerList.clear();
         shape.remove();
         shape = null;
+        mMap.clear();
+        count = 0;
+        markerList.clear();
+        lines.clear();
+        latList.clear();
     }
 
     private void startUpdateLocation() {
