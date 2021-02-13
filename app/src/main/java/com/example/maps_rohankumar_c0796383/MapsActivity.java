@@ -18,6 +18,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -38,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener, GoogleMap.OnPolylineClickListener {
 
     private GoogleMap mMap;
 
@@ -50,14 +51,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //private String[] distance = {"45km", "32km", "66Km", "15km"};
     double startlat,startlng,endlat,endlng;
     float results[] = new float[8];
+    float totaldis;
+    int infocount = 0;
+
     Polyline line;
+    List<Polyline> lines = new ArrayList<>();
 
     Polygon shape;
     private static final int POLYGON_SIDES = 4;
     List<Marker> markerList = new ArrayList<>();
+    List<LatLng> latList = new ArrayList<>();
 
     //For Address
     String address = " ";
+
     //location manager and location listener
     LocationManager locationManager;
     LocationListener locationListener;
@@ -124,6 +131,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     endlat = latLng.latitude;
                     endlng = latLng.longitude;
                     Location.distanceBetween(startlat,startlng,endlat,endlng,results);
+                    totaldis = results[0]+results[1]+results[2]+results[3];
                     setMarker(latLng);
                 } else {
 
@@ -160,16 +168,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     @Override
                     public boolean onMarkerClick(Marker marker) {
 
-                        updateLocationInfo(lastKnownLocation);
-                        Toast.makeText(MapsActivity.this, "Additional Info "+address, Toast.LENGTH_SHORT).show();
-
+                            if(infocount > 4)
+                            {
+                                infocount = 0;
+                            }
+                            updateLocationInfo(lastKnownLocation);
+                            Toast.makeText(MapsActivity.this, "Additional Info " + address, Toast.LENGTH_SHORT).show();
+                        infocount++;
                         return false;
+
                     }
+
 
                 });
             }
 
         }
+
+
+        mMap.setOnPolygonClickListener(this);
+        mMap.setOnPolylineClickListener(this);
 
     }
 
@@ -177,20 +195,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
 
         try{
-            List<Address> addressList = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),1);
+            List<Address> addressList = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),4);
 
-            if(addressList != null && addressList.size() > 0){
-                address = "\n";
+                if (addressList != null && addressList.size() > 0) {
+                    address = "\n";
 
-                if(addressList.get(0).getThoroughfare() != null)
-                    address += addressList.get(0).getThoroughfare() + "\n";
-                if(addressList.get(0).getLocality() != null)
-                    address += addressList.get(0).getLocality() + " ";
-                if(addressList.get(0).getPostalCode() != null)
-                    address += addressList.get(0).getPostalCode() + " ";
-                if(addressList.get(0).getAdminArea() != null)
-                    address += addressList.get(0).getAdminArea();
-            }
+                    if (addressList.get(infocount).getThoroughfare() != null)
+                        address += addressList.get(infocount).getThoroughfare() + "\n";
+                    if (addressList.get(infocount).getLocality() != null)
+                        address += addressList.get(infocount).getLocality() + " ";
+                    if (addressList.get(infocount).getPostalCode() != null)
+                        address += addressList.get(infocount).getPostalCode() + " ";
+                    if (addressList.get(infocount).getAdminArea() != null)
+                        address += addressList.get(infocount).getAdminArea();
+                }
+
 
         }catch (Exception e){
             e.printStackTrace();
@@ -227,6 +246,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 clearMap();
 
             markerList.add(mMap.addMarker(options));
+            latList.add(latLng);
             if(markerList.size() == POLYGON_SIDES)
                 drawShape();
             count++;
@@ -234,25 +254,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void drawShape() {
-        PolygonOptions options = new PolygonOptions()
+
+//        mMap.clear
+        PolygonOptions options = new PolygonOptions().add(latList.get(0),latList.get(1),latList.get(2),latList.get(3))
                 .fillColor(0x33000000)
                 .strokeColor(Color.RED)
                 .strokeWidth(5);
 
-        for(int i=0; i<POLYGON_SIDES; i++)
-            options.add(markerList.get(i).getPosition());
+//        for(int i=0; i<POLYGON_SIDES; i++)
+//            options.add(markerList.get(i).getPosition());
 
         shape = mMap.addPolygon(options);
+        shape.setClickable(true);
+        drawLine();
     }
 
     private void drawLine() {
         if(count < 4) {
-            PolylineOptions options = new PolylineOptions()
-                    .color(Color.BLACK)
-                    .width(10)
-                    .add(homeMarker.getPosition(), destMarker.getPosition());
+            for(int i =0;  i< 4; i ++){
+                PolylineOptions options = new PolylineOptions()
+                        .color(Color.RED)
+                        .width(10)
+                        .add(latList.get(i == 0 ? 3 : i-1),latList.get(i))
+                        .clickable(true);
+                lines.add(mMap.addPolyline(options));
+                lines.get(lines.size()-1).setTag(markerList.get(i == 0 ? 3 : i-1).getTitle().toString() + "-" +markerList.get(i).getTitle().toString() );
+            }
 
-            line = mMap.addPolyline(options);
+
+
             count++;
         }else {
         }
@@ -298,7 +328,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .snippet("Your Location");
 
         homeMarker = mMap.addMarker(options);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(usrLoc,5));
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(usrLoc,10));
 
         startlat = location.getLatitude();
         startlng = location.getLongitude();
@@ -317,14 +348,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onPolygonClick(Polygon polygon) {
-        Toast.makeText(this, "Total Location", Toast.LENGTH_SHORT).show();
-        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
-            @Override
-            public void onPolygonClick(Polygon polygon) {
-                Toast.makeText(MapsActivity.this, "HHHHH", Toast.LENGTH_SHORT).show();
-            }
-        });
+        Log.d("app","clicked gon");
+        Toast.makeText(this, "Total Distance "+totaldis, Toast.LENGTH_SHORT).show();
+//        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+//            @Override
+//            public void onPolygonClick(Polygon polygon) {
+//                shape.setClickable(true);
+//                Toast.makeText(MapsActivity.this, "HHHHH", Toast.LENGTH_SHORT).show();
+//
+//            }
+//        });
     }
+
+
+    @Override
+    public void onPolylineClick(Polyline polyline) {
+        Log.d("app","clicked line");
+        Toast.makeText(this, "Route type " + polyline.getTag().toString(),
+                Toast.LENGTH_SHORT).show();
+    }
+
+
 }
 
 //Half Completed
