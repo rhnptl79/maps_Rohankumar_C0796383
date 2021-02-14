@@ -236,9 +236,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             double d = 2 * rr * Math.asin(Math.sqrt(Math.sin(difflat/2)*Math.sin(difflat/2)+Math.cos(rlat1)*Math.cos(rlat2)*Math.sin(difflon/2)*Math.sin(difflon/2)));
 
-
-//            Location.distanceBetween(homeMarker.getPosition().latitude, homeMarker.getPosition().longitude, latLng.latitude, latLng.longitude,res);
-//            Log.d("data", String.valueOf(res));
+            
             MarkerOptions options = new MarkerOptions().position(latLng)
                     .snippet(String.valueOf(d)+" miles")
                     .icon(bitmapDescriptorFromVector(getApplicationContext(), R.drawable.ic_baseline_directions_bike_24))
