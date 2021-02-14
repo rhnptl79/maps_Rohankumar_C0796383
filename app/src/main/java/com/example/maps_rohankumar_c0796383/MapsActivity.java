@@ -39,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener, GoogleMap.OnPolylineClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener, GoogleMap.OnPolylineClickListener, GoogleMap.OnMarkerDragListener {
 
     private GoogleMap mMap;
 
@@ -49,7 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private int count = 0;
     private String[] city = {"A", "B", "C", "D"};
     //private String[] distance = {"45km", "32km", "66Km", "15km"};
-    double startlat,startlng,endlat,endlng;
+    double startlat, startlng, endlat, endlng;
     float results[] = new float[8];
     float totaldis;
     int infocount = 0;
@@ -61,7 +61,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int POLYGON_SIDES = 4;
     List<Marker> markerList = new ArrayList<>();
     List<LatLng> latList = new ArrayList<>();
-
+    List<Marker> dragList = new ArrayList<>();
     //For Address
     String address = " ";
 
@@ -130,8 +130,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (count < 4) {
                     endlat = latLng.latitude;
                     endlng = latLng.longitude;
-                    Location.distanceBetween(startlat,startlng,endlat,endlng,results);
-                    totaldis = results[0]+results[1]+results[2]+results[3];
+                    Location.distanceBetween(startlat, startlng, endlat, endlng, results);
+                    totaldis = results[0] + results[1] + results[2] + results[3];
                     setMarker(latLng);
                 } else {
                     clearMap();
@@ -156,24 +156,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });*/
 
         //For Additional Information
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},REQUEST_CODE);
-        }
-        else{
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,locationListener);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE);
+        } else {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
             Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if(lastKnownLocation != null){
+            if (lastKnownLocation != null) {
                 mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
 
-                            if(infocount > 4)
-                            {
-                                infocount = 0;
-                            }
-                            updateLocationInfo(lastKnownLocation);
-                            Toast.makeText(MapsActivity.this, "Additional Info " + address, Toast.LENGTH_SHORT).show();
+                        if (infocount > 4) {
+                            infocount = 0;
+                        }
+                        updateLocationInfo(lastKnownLocation);
+                        Toast.makeText(MapsActivity.this, "Additional Info " + address, Toast.LENGTH_SHORT).show();
                         infocount++;
                         return false;
 
@@ -188,51 +186,64 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.setOnPolygonClickListener(this);
         mMap.setOnPolylineClickListener(this);
+        mMap.setOnMarkerDragListener(this);
 
     }
 
     private void updateLocationInfo(Location location) {
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
 
-        try{
-            List<Address> addressList = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),4);
+        try {
+            List<Address> addressList = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 4);
 
-                if (addressList != null && addressList.size() > 0) {
-                    address = "\n";
+            if (addressList != null && addressList.size() > 0) {
+                address = "\n";
 
-                    if (addressList.get(infocount).getThoroughfare() != null)
-                        address += addressList.get(infocount).getThoroughfare() + "\n";
-                    if (addressList.get(infocount).getLocality() != null)
-                        address += addressList.get(infocount).getLocality() + " ";
-                    if (addressList.get(infocount).getPostalCode() != null)
-                        address += addressList.get(infocount).getPostalCode() + " ";
-                    if (addressList.get(infocount).getAdminArea() != null)
-                        address += addressList.get(infocount).getAdminArea();
-                }
+                if (addressList.get(infocount).getThoroughfare() != null)
+                    address += addressList.get(infocount).getThoroughfare() + "\n";
+                if (addressList.get(infocount).getLocality() != null)
+                    address += addressList.get(infocount).getLocality() + " ";
+                if (addressList.get(infocount).getPostalCode() != null)
+                    address += addressList.get(infocount).getPostalCode() + " ";
+                if (addressList.get(infocount).getAdminArea() != null)
+                    address += addressList.get(infocount).getAdminArea();
+            }
 
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private BitmapDescriptor bitmapDescriptorFromVector(Context context,int vectorResId){
-        Drawable vectorDrawable = ContextCompat.getDrawable(context,vectorResId);
-        vectorDrawable.setBounds(0,0,vectorDrawable.getIntrinsicWidth(),vectorDrawable.getIntrinsicHeight());
-        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(),vectorDrawable.getIntrinsicHeight(),Bitmap.Config.ARGB_8888);
+    private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         vectorDrawable.draw(canvas);
-        return  BitmapDescriptorFactory.fromBitmap(bitmap);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
 
     private void setMarker(LatLng latLng) {
-        if(count < 4) {
+        if (count < 4) {
+//            float res[] = new float[4];
+            double rr = 3958.8; // Radius of the Earth in miles 6371.0710 for km
+            double rlat1 = homeMarker.getPosition().latitude * (Math.PI/180); // Convert degrees to radians
+            double rlat2 = latLng.latitude * (Math.PI/180); // Convert degrees to radians
+            double difflat = rlat2-rlat1; // Radian difference (latitudes)
+            double difflon = (latLng.longitude-homeMarker.getPosition().longitude) * (Math.PI/180); // Radian difference (longitudes)
 
+            double d = 2 * rr * Math.asin(Math.sqrt(Math.sin(difflat/2)*Math.sin(difflat/2)+Math.cos(rlat1)*Math.cos(rlat2)*Math.sin(difflon/2)*Math.sin(difflon/2)));
+
+
+//            Location.distanceBetween(homeMarker.getPosition().latitude, homeMarker.getPosition().longitude, latLng.latitude, latLng.longitude,res);
+//            Log.d("data", String.valueOf(res));
             MarkerOptions options = new MarkerOptions().position(latLng)
-                    .snippet(String.valueOf(results[count]))
-                    .icon(bitmapDescriptorFromVector(getApplicationContext(),R.drawable.ic_baseline_directions_bike_24))
-                    .title(" "+city[count]);
+                    .snippet(String.valueOf(d)+" miles")
+                    .icon(bitmapDescriptorFromVector(getApplicationContext(), R.drawable.ic_baseline_directions_bike_24))
+
+                    .title(" " + city[count]);
 
             //Below for polyline
         /*if(destMarker != null)
@@ -242,21 +253,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             //Below for polygon
             //check if there are already the same number of markers, we clear the map
-            if(markerList.size() == POLYGON_SIDES)
+            if (markerList.size() == POLYGON_SIDES)
                 clearMap();
 
             markerList.add(mMap.addMarker(options));
+            markerList.get(markerList.size() - 1).setDraggable(true);
             latList.add(latLng);
-            if(markerList.size() == POLYGON_SIDES)
+            if (markerList.size() == POLYGON_SIDES)
                 drawShape();
             count++;
         }
     }
 
     private void drawShape() {
-
+        Log.d("draw","called");
 //        mMap.clear
-        PolygonOptions options = new PolygonOptions().add(latList.get(0),latList.get(1),latList.get(2),latList.get(3))
+        PolygonOptions options = new PolygonOptions().add(latList.get(0), latList.get(1), latList.get(2), latList.get(3))
                 .fillColor(0x33000000)
                 .strokeColor(Color.RED)
                 .strokeWidth(5);
@@ -270,21 +282,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void drawLine() {
-        if(count < 4) {
-            for(int i =0;  i< 4; i ++){
+        if (count < 4) {
+            for (int i = 0; i < 4; i++) {
                 PolylineOptions options = new PolylineOptions()
                         .color(Color.RED)
                         .width(10)
-                        .add(latList.get(i == 0 ? 3 : i-1),latList.get(i))
+                        .add(latList.get(i == 0 ? 3 : i - 1), latList.get(i))
                         .clickable(true);
                 lines.add(mMap.addPolyline(options));
-                lines.get(lines.size()-1).setTag(markerList.get(i == 0 ? 3 : i-1).getTitle().toString() + "-" +markerList.get(i).getTitle().toString()+" Distance = "+results[i] );
+                lines.get(lines.size() - 1).setTag(markerList.get(i == 0 ? 3 : i - 1).getTitle().toString() + "-" + markerList.get(i).getTitle().toString() + " Distance = " + results[i]);
             }
 
 
-
             count++;
-        }else {
+        } else {
 
         }
     }
@@ -298,7 +309,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         line.remove();*/
 
         //for polygon
-        for(Marker marker: markerList)
+        for (Marker marker : markerList)
             marker.remove();
         markerList.clear();
         shape.remove();
@@ -318,7 +329,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void requestLocationPermission() {
-        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},REQUEST_CODE);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE);
     }
 
     private boolean isGrantedPermission() {
@@ -326,16 +337,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setHomeMarker(Location location) {
-        LatLng usrLoc = new LatLng(location.getLatitude(),location.getLongitude());
+        LatLng usrLoc = new LatLng(location.getLatitude(), location.getLongitude());
         MarkerOptions options = new MarkerOptions().position(usrLoc)
                 .title("You are here")
                 //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                .icon(bitmapDescriptorFromVector(getApplicationContext(),R.drawable.ic_baseline_directions_bike_24))
+                .icon(bitmapDescriptorFromVector(getApplicationContext(), R.drawable.ic_baseline_directions_bike_24))
                 .snippet("Your Location");
 
         homeMarker = mMap.addMarker(options);
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(usrLoc,10));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(usrLoc, 10));
 
         startlat = location.getLatitude();
         startlng = location.getLongitude();
@@ -345,17 +356,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if(REQUEST_CODE == requestCode){
-            if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,0,locationListener);
+        if (REQUEST_CODE == requestCode) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, locationListener);
             }
         }
     }
 
     @Override
     public void onPolygonClick(Polygon polygon) {
-        Log.d("app","clicked gon");
-        Toast.makeText(this, "Total Distance "+totaldis, Toast.LENGTH_SHORT).show();
+        Log.d("app", "clicked gon");
+        Toast.makeText(this, "Total Distance " + totaldis, Toast.LENGTH_SHORT).show();
 //        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
 //            @Override
 //            public void onPolygonClick(Polygon polygon) {
@@ -369,16 +380,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onPolylineClick(Polyline polyline) {
-        Log.d("app","clicked line");
+        Log.d("app", "clicked line");
         Toast.makeText(this, "Route type " + polyline.getTag().toString(),
                 Toast.LENGTH_SHORT).show();
     }
 
 
+    @Override
+    public void onMarkerDragStart(Marker marker) {
+//        Log.d("app","clicked marker drag started");
+    }
+
+    @Override
+    public void onMarkerDrag(Marker marker) {
+//        Log.d("app","clicked marker drag");
+    }
+
+    @Override
+    public void onMarkerDragEnd(Marker marker) {
+        Log.d("app", "clicked marker drag end"+markerList.size());
+        count = 0;
+        if(markerList.size() > 3){
+            shape.remove();
+            for(Polyline l : lines){
+                l.remove();
+            }
+            lines.clear();
+            latList.clear();
+            for(Marker mark: markerList){
+                latList.add(mark.getPosition());
+            }
+            drawLine();
+            drawShape();
+
+        }
+    }
 }
-
-//Half Completed
-
 
 
 
