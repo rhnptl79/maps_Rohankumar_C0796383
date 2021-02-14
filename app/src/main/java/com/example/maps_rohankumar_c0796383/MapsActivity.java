@@ -269,7 +269,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.d("draw","called");
 //        mMap.clear
         PolygonOptions options = new PolygonOptions().add(latList.get(0), latList.get(1), latList.get(2), latList.get(3))
-                .fillColor(0x33000000)
+                .fillColor(Color.parseColor("#5900FF00"))
                 .strokeColor(Color.RED)
                 .strokeWidth(5);
 
